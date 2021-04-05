@@ -79,7 +79,13 @@ services:
 #    - "constraint:node==<yourworkernode>"
     depends_on:
       - flink-master
-
+  kafka:
+    image: liuat/kafka:2.7.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+     - "9092:9092"
+     
 volumes:
   hadoop_namenode:
   hadoop_datanode:
