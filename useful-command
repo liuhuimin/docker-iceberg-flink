@@ -1,0 +1,90 @@
+docker cp iceberg-flink-runtime-0.11.0.jar flink-master:/
+
+
+docker run --entrypoint=/bin/bash -i -t liuat/kafka:2.7.0 
+
+
+docker exec -it flink-master bash
+
+docker cp flink-sql-connector-kafka_2.12-1.11.3.jar flink-master:/
+
+docker build -t liuat/flink-base:1.11.3-hadoop3.2 .
+
+docker build -t liuat/flink-master:1.11.3-hadoop3.2 .
+docker build -t liuat/flink-worker:1.11.3-hadoop3.2 .
+
+export HADOOP_CLASSPATH=`$HADOOP_HOME/bin/hadoop classpath`
+
+sql-client.sh embedded -j /usr/local/iceberg/iceberg-flink-runtime-0.11.0.jar shell
+
+CREATE CATALOG hadoop_catalog WITH (
+  'type'='iceberg',
+  'catalog-type'='hadoop',
+  'warehouse'='hdfs://namenode:9000/warehouse/path',
+  'property-version'='1'
+);
+
+CREATE DATABASE iceberg_db;
+USE iceberg_db;
+
+CREATE TABLE hadoop_catalog.default.sample (
+    id BIGINT COMMENT 'unique id',
+    data STRING
+);
+
+CREATE TABLE sample (
+    id BIGINT,
+    data STRING
+);
+
+CREATE TABLE hadoop_catalog.iceberg_db.sample (
+    id BIGINT COMMENT 'unique id',
+    data STRING
+);
+
+CREATE TABLE hadoop_catalog.sample (
+    id BIGINT COMMENT 'unique id',
+    data STRING
+);
+
+INSERT INTO hadoop_catalog.iceberg_db.sample VALUES (1, 'a');
+
+INSERT INTO sample VALUES (1, 'a');
+
+INSERT INTO sample VALUES (2, 'b');
+
+USE CATALOG hadoop_catalog
+
+
+
+ CREATE TABLE kafkaTable (
+ a String
+) WITH (
+ 'connector' = 'kafka',
+ 'topic' = 'test',
+ 'properties.bootstrap.servers' = 'test-4:9092',
+ 'properties.group.id' = 'testGroup',
+ 'format' = 'csv',
+ 'scan.startup.mode' = 'earliest-offset'
+)
+
+
+
+CREATE TABLE kafkaTable (
+ user_id BIGINT,
+ behavior STRING
+) WITH (
+ 'connector' = 'kafka',
+ 'topic' = 'quickstart-events',
+ 'properties.bootstrap.servers' = 'kafka:9092',
+ 'properties.group.id' = 'testGroup',
+ 'format' = 'csv',
+ 'scan.startup.mode' = 'earliest-offset'
+)
+
+kafka-topics.sh --create --topic quickstart-events --bootstrap-server localhost:9092
+kafka-topics.sh --describe --topic quickstart-events --bootstrap-server localhost:9092
+kafka-console-producer.sh --topic quickstart-events --bootstrap-server localhost:9092
+kafka-console-consumer.sh --topic quickstart-events --from-beginning --bootstrap-server localhost:9092
+
+sql-client.sh embedded --jar /flink-sql-connector-kafka_2.11-1.11.2.jar
